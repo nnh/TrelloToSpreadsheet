@@ -1,6 +1,3 @@
-/*
-参考）Trello APIを使ってボードをスプレッドシートに出力する｜ＧＭＯアドパートナーズ：https://techblog.gmo-ap.jp/2019/12/05/trello_to_spreadsheet/
-*/
 class GetTrelloInformation {
   constructor(target) {
     this.target = target;
@@ -33,51 +30,50 @@ function aaa() {
   const cardMergeMember = getMemberName(cardMergeBoard);
   // Set the list name
   const cardMergeList = getListInfo(cardMergeMember);
-  console.log(cardMergeList);
   // Set the lable
+  const cardMergeLabel = getLabelInfo(cardMergeList);
+  console.log(cardMergeLabel[1]);
 }
 function getBoardName(cards) {
   const boardInfo = new GetTrelloInformation('').information;;
-  const cardMergeBoard = cards.map(function(card) {
-    if (card.idBoard == boardInfo.id) {
-      card['boardName'] = boardInfo.name;
-    } else {
-      card['boardName'] = 'board-machigai';
-    }
+  const cardMergeBoard = cards.map(card => {
+    card['boardName'] = boardInfo.name;
     return card;
   });
   return cardMergeBoard
 }
 function getMemberName(cards) {
   const memberJson = new GetTrelloInformation('/members').information;
-  const cardMergeMember = cards.map(function(card) {
-    const targetMember = card.idMembers.map(function(idMember) {
-      const memberData = this.filter(member => member.id == idMember);
-      return memberData[0];
-    }, memberJson);
-    if (targetMember.length == 1) {
-      card['memberName'] = targetMember[0].fullName;
-    } else {
-      card['memberName'] = 'namae-naiyo-';
-    }
+  const cardMergeMember = cards.map(card => {
+    const memberName = card.idMembers.map(idMember => {
+      const memberData = memberJson.filter(member => member.id == idMember);
+      return memberData[0].fullName;
+    });
+    card['memberName'] = memberName;
     return card;
   });
   return cardMergeMember;
 }
 function getListInfo(cards) {
   const listJson = new GetTrelloInformation('/lists').information;
-  const cardMergeList = cards.map(function(card) {
-    const temp_list = this.filter(list => list.id == card.idList);
-    card['listName'] = temp_list[0].name;
+  const cardMergeList = cards.map(card => {
+    const targetList = listJson.filter(list => list.id == card.idList);
+    card['listName'] = targetList[0].name;
     return card;
-  }, listJson);
+  });
   return cardMergeList;
 }
 function getLabelInfo(cards) {
   const labelJson = new GetTrelloInformation('/labels').information;
-  const cardMergeLabel = cards.map(function(card) {
-
+  const cardMergeLabel = cards.map(card => {
+    const labelName = card.idLabels.map(labelInfo => {
+      const labelData = labelJson.filter(label => label.id == labelInfo);
+      return labelData[0].name;
+    });
+    card['labelName'] = labelName;
+    return card;
   });
+  return cardMergeLabel;
 }
 function getEstimateAndAchievement() {
 
