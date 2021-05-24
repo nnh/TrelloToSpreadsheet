@@ -42,19 +42,27 @@ class GetTrelloInformationByCard extends GetTrelloInformation{
     return this.getJsonData(url);
   }
 }
+function filterArray(varNameList, target) {
+  const temp = {};
+  varNameList.forEach(varName => temp[varName] = target[varName]);
+  return temp;
+}
 function aaa() {
-  const sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
-  const cards = new GetTrelloInformation('/cards').information;
+  const cardsInfo = new GetTrelloInformation('/cards').information;
+  const cards = cardsInfo.map(card => filterArray(['id', 'name', 'desc', 'idBoard', 'idLabels', 'idList', 'idChecklists', 'idMembers', 'limits', 'url'], card));
+  // Set the customfields
   const cardMergeEstimateAndAchievement = getEstimateAndAchievementInfo(cards);
-  console.log(cardMergeEstimateAndAchievement);
   // Set the board name
-  const cardMergeBoard = getBoardName(cards);
+  const cardMergeBoard = getBoardName(cardMergeEstimateAndAchievement);
   // Set the member name
   const cardMergeMember = getMemberName(cardMergeBoard);
   // Set the list name
   const cardMergeList = getListInfo(cardMergeMember);
   // Set the lable
   const cardMergeLabel = getLabelInfo(cardMergeList);
+  console.log(cardMergeLabel);
+  return;
+  outputSheet(cardMergeLabel);
 }
 function getBoardName(cards) {
   const boardInfo = new GetTrelloInformation('').information;
@@ -133,80 +141,24 @@ function setEstimateOrAchievementVarName(target) {
   }
   return temp;
 }
-
 function getCheckLists() {
   const url = (editUrl('/checklists'));
   console.log(getJsonData(url));
   return getJsonData(url);
 }
-function outputSheet(targetSheet, valueList) {
+function outputSheet(target) {
+  const sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
   const sheetName = "trello";
-  const header = Object.keys(cardJson[1]);
+  const header = Object.keys(target[1]);
   // Output card information to spreadsheet
   const sheet = SpreadsheetApp.openByUrl(sheetUrl).getSheetByName(sheetName);
   sheet.clear();
-  const column_count = header.length;
-  const headerRange = sheet.getRange(1, 1, 1, column_count);
-  headerRange.setValues([header]);
-  for(var i = 0; i < cardJson.length; i++){
-    // id設定
-    sheet.getRange(1, i + 1).setValue((header[i]));
-  }  
-  for(var i = 0; i < cardJson.length; i++){
-    // 各カラム設定
-    for(var j = 0; j < header.length; j++) {
-      if (cardItem[j] == '') {
-        continue;
-      }
-      var getElement = cardJson[i][header[j]];
-      sheet.getRange(2 + i, 1 + j).setValue(getElement);
-    }
+  var outputValues = new Array();
+  for (var i = 0; i < Object.keys(target).length; i++) {
+    outputValues.push(Object.values(target[i]));
+//    console.log(Object.values(target[i]).length);
   }
-  //writeSheet(cardJson, sheetUrl, sheetName, cardItem, true);
+//  sheet.getRange(1, 1, 1, Object.keys(target[0]).length).setValues([Object.keys(target[0])]);
+//  sheet.getRange(2, 1, outputValues.length, outputValues[0].length).setValues(outputValues);
 }
 
-/*
-Trelloからjson形式のデータを取得。
-スプレッドシートに書込み。
-*/
-function writeSheet(cardJson, sheetUrl, sheetName, cardItem, isCards) {
-  var startRow = 2;
-  if (isCards) {
-    startRow = 3;
-  }
-  // Output spreadsheet information
-  const sheet = SpreadsheetApp.openByUrl(sheetUrl).getSheetByName(sheetName);
-  sheet.clear();
-  // 見出し出力
-  for(var i = 0; i < cardItem.length; i++) {
-    var columnName = '';
-    if (cardItem[i] == '') {
-      continue;
-    } else if (isCards && cardItem[i] == 'name') {
-      columnName = 'カード'
-    } else if (isCards && cardItem[i] == 'desc') {
-      columnName = '内容'
-    }　else {
-      columnName = cardItem[i];
-    }
-    
-    sheet.getRange(1,2+i).setValue(columnName);
-  }
-
-  // カード情報取得  
-  for(var i = 0; i < cardJson.length; i++){
-    var writeRow = 1;
-    // id設定
-    sheet.getRange(startRow + i,1).setValue((i+1));
-
-    // 各カラム設定
-    for(var j = 0; j < cardItem.length; j++) {
-      writeRow++;
-      if (cardItem[j] == '') {
-        continue;
-      }
-      var getElement = cardJson[i][cardItem[j]];
-      sheet.getRange(startRow + i,writeRow).setValue(getElement);
-    }
-  }
-}
