@@ -46,9 +46,7 @@ function aaa() {
   const sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
   const cards = new GetTrelloInformation('/cards').information;
   const cardMergeEstimateAndAchievement = getEstimateAndAchievementInfo(cards);
-  //console.log(cardMergeEstimateAndAchievement);
-  //console.log(cards[1]);
-  return;
+  console.log(cardMergeEstimateAndAchievement);
   // Set the board name
   const cardMergeBoard = getBoardName(cards);
   // Set the member name
@@ -57,7 +55,6 @@ function aaa() {
   const cardMergeList = getListInfo(cardMergeMember);
   // Set the lable
   const cardMergeLabel = getLabelInfo(cardMergeList);
-  console.log(cardMergeLabel[1]);
 }
 function getBoardName(cards) {
   const boardInfo = new GetTrelloInformation('').information;
@@ -102,21 +99,24 @@ function getLabelInfo(cards) {
 }
 function getEstimateAndAchievementInfo(cards) {
   const customFieldItemsJson = new GetTrelloInformation('/customFields').information;
-  const customFieldItemsList = customFieldItemsJson.map(customFieldItem => {
+  const customFieldItemsLists = customFieldItemsJson.map(customFieldItem => {
     customFieldItem['varName'] = setEstimateOrAchievementVarName(customFieldItem.name);
     return customFieldItem;
   });
-  const cardMergeCustomFieldItems = cards.map(card => {
+  const cardMergeCustomFields = cards.map(card => {
     const customFieldItemsByCardJson = new GetTrelloInformationByCard('/customFieldItems', card.id).getInformation();
-    const cardMergeValue = customFieldItemsByCardJson.map(function(customFieldItemsByCard) {
-      const customFieldItems = this.filter(customFieldItem => customFieldItem.id == customFieldItemsByCard.idCustomField);
-      customFieldItemsByCard['name'] = customFieldItems[0].name;
-      customFieldItemsByCard[customFieldItems[0].varName] = customFieldItemsByCard.value.number;
-      return customFieldItemsByCard;
-    }, customFieldItemsList);
-    return cardMergeValue;
-  });
-  console.log(cardMergeCustomFieldItems);
+    customFieldItemsByCardJson.forEach(customFieldItemsByCard => {
+      const fieldInfo = customFieldItemsLists.filter(itemlist =>  itemlist.id == customFieldItemsByCard.idCustomField);
+      if (fieldInfo[0].varName == 'estimate') {
+        card.estimate = customFieldItemsByCard.value.number;
+      }
+      if (fieldInfo[0].varName == 'achievement') {
+        card.achievement = customFieldItemsByCard.value.number;
+      }
+    });
+    return card;
+  }); 
+  return cardMergeCustomFields;
 }
 function setEstimateOrAchievementVarName(target) {
   const estimate = 'estimate';
