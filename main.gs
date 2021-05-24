@@ -5,11 +5,17 @@ class GetTrelloInformation {
   get information(){
     return this.getInformation();
   }
+  getTrelloProperties() {
+    const trelloInfo = {
+      key: PropertiesService.getScriptProperties().getProperty('trelloKey'), 
+      token: PropertiesService.getScriptProperties().getProperty('trelloToken'), 
+      boardId: PropertiesService.getScriptProperties().getProperty('trelloBoardId')
+    }
+    return trelloInfo;
+  }
   editUrl(target) {
-    const trelloKey = PropertiesService.getScriptProperties().getProperty('trelloKey');
-    const trelloToken = PropertiesService.getScriptProperties().getProperty('trelloToken');
-    const trelloBoardId = PropertiesService.getScriptProperties().getProperty('trelloBoardId');
-    const url = 'https://trello.com/1/boards/' + trelloBoardId + target + '?key=' + trelloKey + '&token=' + trelloToken + '&fields=all';
+    const trelloInfo = this.getTrelloProperties();
+    const url = 'https://trello.com/1/boards/' + trelloInfo.boardId + target + '?key=' + trelloInfo.key + '&token=' + trelloInfo.token + '&fields=all';
     return url;
   }
   getJsonData(url) {
@@ -21,9 +27,28 @@ class GetTrelloInformation {
     return this.getJsonData(url);
   }
 }
+class GetTrelloInformationByCard extends GetTrelloInformation{
+  constructor(target, cardId) {
+    super(target);
+    this.cardId = cardId;
+  }
+  editUrl(target, cardId) {
+    const trelloInfo = this.getTrelloProperties();
+    const url = 'https://api.trello.com/1/cards/' + cardId + '' + target + '?key=' + trelloInfo.key + '&token=' + trelloInfo.token + '&fields=all';
+    return url;
+  }  
+  getInformation() {
+    const url = (this.editUrl(this.target, this.cardId));
+    return this.getJsonData(url);
+  }
+}
 function aaa() {
   const sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
   const cards = new GetTrelloInformation('/cards').information;
+  const cardMergeEstimateAndAchievement = getEstimateAndAchievementInfo(cards);
+  //console.log(cardMergeEstimateAndAchievement);
+  //console.log(cards[1]);
+  return;
   // Set the board name
   const cardMergeBoard = getBoardName(cards);
   // Set the member name
@@ -35,7 +60,7 @@ function aaa() {
   console.log(cardMergeLabel[1]);
 }
 function getBoardName(cards) {
-  const boardInfo = new GetTrelloInformation('').information;;
+  const boardInfo = new GetTrelloInformation('').information;
   const cardMergeBoard = cards.map(card => {
     card['boardName'] = boardInfo.name;
     return card;
@@ -75,27 +100,39 @@ function getLabelInfo(cards) {
   });
   return cardMergeLabel;
 }
-function getEstimateAndAchievement() {
-
-  const trelloKey = PropertiesService.getScriptProperties().getProperty('trelloKey');
-  const trelloToken = PropertiesService.getScriptProperties().getProperty('trelloToken');
-  const cardId = '';
-//  var url = 'https://api.trello.com/1/boards/' + trelloBoard + '/?fields=name&cards=visible&card_fields=name&customFields=true&card_customFieldItems=true&key=' + trelloKey + '&token=' + trelloToken;
-  var url = 'https://api.trello.com/1/cards/' + cardId + '/?fields=name&customFieldItems=true&key=' + trelloKey + '&token=' + trelloToken;
-  const cardJson = getJsonData(url);
-  console.log(cardJson);
-  console.log(cardJson.customFieldItems);
- // console.log(cardJson[0]);
+function getEstimateAndAchievementInfo(cards) {
+  const customFieldItemsJson = new GetTrelloInformation('/customFields').information;
+  const customFieldItemsList = customFieldItemsJson.map(customFieldItem => {
+    customFieldItem['varName'] = setEstimateOrAchievementVarName(customFieldItem.name);
+    return customFieldItem;
+  });
+  const cardMergeCustomFieldItems = cards.map(card => {
+    const customFieldItemsByCardJson = new GetTrelloInformationByCard('/customFieldItems', card.id).getInformation();
+    const cardMergeValue = customFieldItemsByCardJson.map(function(customFieldItemsByCard) {
+      const customFieldItems = this.filter(customFieldItem => customFieldItem.id == customFieldItemsByCard.idCustomField);
+      customFieldItemsByCard['name'] = customFieldItems[0].name;
+      customFieldItemsByCard[customFieldItems[0].varName] = customFieldItemsByCard.value.number;
+      return customFieldItemsByCard;
+    }, customFieldItemsList);
+    return cardMergeValue;
+  });
+  console.log(cardMergeCustomFieldItems);
 }
-
-function getCustomFields() {
-  const url = (editUrl('/customFields'));
-  console.log(getJsonData(url));
-  
-  return getJsonData(url);
-
+function setEstimateOrAchievementVarName(target) {
+  const estimate = 'estimate';
+  const achievement = 'achievement';
+  var estimateAndAchievement = {};
+  estimateAndAchievement[estimate] = '見積';
+  estimateAndAchievement[achievement] = '実績';
+  if (target == estimateAndAchievement.estimate) {
+    var temp = estimate;
+  } else if (target == estimateAndAchievement.achievement) {
+    var temp = achievement;
+  } else {
+    var temp = '';
+  }
+  return temp;
 }
-
 
 function getCheckLists() {
   const url = (editUrl('/checklists'));
