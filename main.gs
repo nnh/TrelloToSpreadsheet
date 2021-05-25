@@ -60,8 +60,6 @@ function aaa() {
   const cardMergeList = getListInfo(cardMergeMember);
   // Set the lable
   const cardMergeLabel = getLabelInfo(cardMergeList);
-  console.log(cardMergeLabel);
-  return;
   outputSheet(cardMergeLabel);
 }
 function getBoardName(cards) {
@@ -112,6 +110,8 @@ function getEstimateAndAchievementInfo(cards) {
     return customFieldItem;
   });
   const cardMergeCustomFields = cards.map(card => {
+    card.estimate = '';
+    card.achievement = '';
     const customFieldItemsByCardJson = new GetTrelloInformationByCard('/customFieldItems', card.id).getInformation();
     customFieldItemsByCardJson.forEach(customFieldItemsByCard => {
       const fieldInfo = customFieldItemsLists.filter(itemlist =>  itemlist.id == customFieldItemsByCard.idCustomField);
@@ -149,16 +149,14 @@ function getCheckLists() {
 function outputSheet(target) {
   const sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
   const sheetName = "trello";
-  const header = Object.keys(target[1]);
   // Output card information to spreadsheet
   const sheet = SpreadsheetApp.openByUrl(sheetUrl).getSheetByName(sheetName);
   sheet.clear();
   var outputValues = new Array();
+  outputValues.push(Object.keys(target[0]));
   for (var i = 0; i < Object.keys(target).length; i++) {
     outputValues.push(Object.values(target[i]));
-//    console.log(Object.values(target[i]).length);
   }
-//  sheet.getRange(1, 1, 1, Object.keys(target[0]).length).setValues([Object.keys(target[0])]);
-//  sheet.getRange(2, 1, outputValues.length, outputValues[0].length).setValues(outputValues);
+  sheet.getRange(1, 1, outputValues.length, outputValues[0].length).setValues(outputValues);
 }
 
