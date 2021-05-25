@@ -27,20 +27,19 @@ class GetTrelloInformation {
     return this.getJsonData(url);
   }
 }
-class GetTrelloInformationByCard extends GetTrelloInformation{
-  constructor(target, cardId) {
-    super(target);
-    this.cardId = cardId;
-  }
-  editUrl(target, cardId) {
+class GetTrelloLists extends GetTrelloInformation{
+    editUrl() {
     const trelloInfo = this.getTrelloProperties();
-    const url = 'https://api.trello.com/1/cards/' + cardId + '' + target + '?key=' + trelloInfo.key + '&token=' + trelloInfo.token + '&fields=all';
+    const url = 'https://trello.com/1/boards/' + trelloInfo.boardId + '/lists?key=' + trelloInfo.key + '&token=' + trelloInfo.token + '&fields=all&cards=all&filter=all';
+    return url;
+  } 
+}
+class GetTrelloCardsByLists extends GetTrelloInformation{
+  editUrl(target) {
+    const trelloInfo = this.getTrelloProperties();
+    const url = 'https://api.trello.com/1/lists/' + target + '/cards?key=' + trelloInfo.key + '&token=' + trelloInfo.token + '&fields=all&attachments=true&members=true&checkItemStates=true&pluginData=true&stickers=true&customFieldItems=true';
     return url;
   }  
-  getInformation() {
-    const url = (this.editUrl(this.target, this.cardId));
-    return this.getJsonData(url);
-  }
 }
 function filterArray(varNameList, target) {
   const temp = {};
@@ -48,8 +47,34 @@ function filterArray(varNameList, target) {
   return temp;
 }
 function aaa() {
+  const lists = new GetTrelloLists().information;
+  const rawCards = lists.map(list => new GetTrelloCardsByLists(list.id).information);
+  var customFieldsList = new GetTrelloInformation('/customFields').information;
+  customFieldsList = customFieldsList.map(customFields => {
+    if (customFields.name == '見積') {
+      
+    } else if (customFields.name == '実績') {
+
+    }
+
+  });
+  const cards = rawCards.map(card => {
+    const cardInfo = card.map(cardValues => {
+      const labels = cardValues.labels.map(label => label.name);
+      const members = cardValues.members.map(member => member.fullName);
+      const customFields = cardValues.customFieldItems.map(function(a){
+        console.log(this);
+
+      });
+
+    });
+  });
+  //console.log(rawCards);
+  return;
+
+  return;
   const cardsInfo = new GetTrelloInformation('/cards').information;
-  const cards = cardsInfo.map(card => filterArray(['id', 'name', 'desc', 'idBoard', 'idLabels', 'idList', 'idChecklists', 'idMembers', 'limits', 'url'], card));
+//  const cards = cardsInfo.map(card => filterArray(['id', 'name', 'desc', 'idBoard', 'idLabels', 'idList', 'idChecklists', 'idMembers', 'limits', 'url'], card));
   // Set the customfields
   const cardMergeEstimateAndAchievement = getEstimateAndAchievementInfo(cards);
   // Set the board name
@@ -81,27 +106,6 @@ function getMemberName(cards) {
     return card;
   });
   return cardMergeMember;
-}
-function getListInfo(cards) {
-  const listJson = new GetTrelloInformation('/lists').information;
-  const cardMergeList = cards.map(card => {
-    const targetList = listJson.filter(list => list.id == card.idList);
-    card['listName'] = targetList[0].name;
-    return card;
-  });
-  return cardMergeList;
-}
-function getLabelInfo(cards) {
-  const labelJson = new GetTrelloInformation('/labels').information;
-  const cardMergeLabel = cards.map(card => {
-    const labelName = card.idLabels.map(labelInfo => {
-      const labelData = labelJson.filter(label => label.id == labelInfo);
-      return labelData[0].name;
-    });
-    card['labelName'] = labelName;
-    return card;
-  });
-  return cardMergeLabel;
 }
 function getEstimateAndAchievementInfo(cards) {
   const customFieldItemsJson = new GetTrelloInformation('/customFields').information;
