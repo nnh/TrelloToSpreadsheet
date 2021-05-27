@@ -47,27 +47,47 @@ function filterArray(varNameList, target) {
   return temp;
 }
 function aaa() {
+  const estimate = 'estimate';
+  const achievement = 'achievement';
   const lists = new GetTrelloLists().information;
   const rawCards = lists.map(list => new GetTrelloCardsByLists(list.id).information);
   var customFieldsList = new GetTrelloInformation('/customFields').information;
   customFieldsList = customFieldsList.map(customFields => {
+    var resCustomFieldsList = {};
     if (customFields.name == '見積') {
-      
+      resCustomFieldsList.varName = estimate; 
     } else if (customFields.name == '実績') {
-
+      resCustomFieldsList.varName = achievement;
     }
-
+    resCustomFieldsList.idModel = customFields.idModel;
+    resCustomFieldsList.name = customFields.name;
+    resCustomFieldsList.id = customFields.id;
+    return resCustomFieldsList;
   });
   const cards = rawCards.map(card => {
     const cardInfo = card.map(cardValues => {
+      cardValues[estimate] = '';
+      cardValues[achievement] = '';
       const labels = cardValues.labels.map(label => label.name);
       const members = cardValues.members.map(member => member.fullName);
-      const customFields = cardValues.customFieldItems.map(function(a){
-        console.log(this);
+/*      const customFields = cardValues.customFieldItems.map(cardValue => {
+        var temp = {};
+        const field = customFieldsList.filter(fieldList => fieldList.id == cardValue.idCustomField); 
+        temp[field[0].varName] = cardValue.value.number;
+        return temp;
+      });*/
+      var target = {};
+      target.master = customFieldsList;
+      const estimateValue = cardValues.customFieldItems.filter(customField => customField.idCustomField == '5fd8769be5368e375cafd321');
 
-      });
-
+      if (estimateValue.length > 0) {
+        cardValues.estimate = estimateValue[0].value.number;
+      }
+      cardValues.labelList = labels;
+      cardValues.memberList = members;
+      return cardValues;
     });
+    console.log(cardInfo);
   });
   //console.log(rawCards);
   return;
@@ -86,6 +106,11 @@ function aaa() {
   // Set the lable
   const cardMergeLabel = getLabelInfo(cardMergeList);
   outputSheet(cardMergeLabel);
+}
+function getCustomFieldValue(target) {
+  const master = target.master.filter(masterValues => masterValues.id == target.id);
+  target.customFieldItems[master[0].varName] = target.customFieldItems.value.number;
+  return target.customFieldItems[master[0].varName];
 }
 function getBoardName(cards) {
   const boardInfo = new GetTrelloInformation('').information;
@@ -131,8 +156,6 @@ function getEstimateAndAchievementInfo(cards) {
   return cardMergeCustomFields;
 }
 function setEstimateOrAchievementVarName(target) {
-  const estimate = 'estimate';
-  const achievement = 'achievement';
   var estimateAndAchievement = {};
   estimateAndAchievement[estimate] = '見積';
   estimateAndAchievement[achievement] = '実績';
