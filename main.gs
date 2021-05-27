@@ -60,7 +60,8 @@ function aaa() {
       const checkLists = new GetTrelloItemsByCards(checklistTarget).information;
       const actionsTarget = {id: cardValues.id, item:'/actions'};
       const actionsLists = new GetTrelloItemsByCards(actionsTarget).information;
-      console.log(actionsLists.map(a => console.log(a)));
+      const targetActionsLists = actionsLists.filter(actionsList => actionsList.type == 'commentCard' && actionsList.data.text != null);
+      cardValues.activity = targetActionsLists.map(targetAction => targetAction.data.text).join();
       cardValues[estimate] = '';
       cardValues[achievement] = '';
       const labels = cardValues.labels.map(label => label.name).join();
@@ -77,7 +78,7 @@ function aaa() {
       }
       cardValues.labelList = labels;
       cardValues.memberList = members;
-      return filterArray(['id', 'closed', 'name', 'desc', 'labelList', 'memberList', 'estimate', 'achievement', 'url'],cardValues);
+      return filterArray(['id', 'closed', 'name', 'desc', 'labelList', 'memberList', 'estimate', 'achievement', 'activity', 'url'],cardValues);
     });
     return cardInfo;
   });
