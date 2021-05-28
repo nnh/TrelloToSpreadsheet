@@ -48,22 +48,27 @@ class GetTrelloItemsByCards extends GetTrelloInformation{
     return url;
   }  
 }
-function aaa() {
+function outputTrelloToSpreadSheet() {
   const estimate = 'estimate';
   const achievement = 'achievement';
   const lists = new GetTrelloLists().information;
   const rawCards = lists.map(list => new GetTrelloCardsByLists(list.id).information);
-  var customFieldsList = new GetTrelloInformation('/customFields').information;
+  const customFieldsList = new GetTrelloInformation('/customFields').information;
   const cards = rawCards.map(card => {
     const cardInfo = card.map(cardValues => {
+      cardValues[estimate] = '';
+      cardValues[achievement] = '';
       const checklistTarget = {id: cardValues.id, item:'/checklists'};
       const checkLists = new GetTrelloItemsByCards(checklistTarget).information;
+      const targetCheckLists = checkLists.map(checkList => {
+        const checkItemValues = checkList.checkItems.map(checkItem => checkItem.name + '(' + checkItem.state + ')').join();
+        return checkList.name + ':' + checkItemValues;
+      });
+      cardValues.checkListList = targetCheckLists;
       const actionsTarget = {id: cardValues.id, item:'/actions'};
       const actionsLists = new GetTrelloItemsByCards(actionsTarget).information;
       const targetActionsLists = actionsLists.filter(actionsList => actionsList.type == 'commentCard' && actionsList.data.text != null);
       cardValues.activity = targetActionsLists.map(targetAction => targetAction.data.text).join();
-      cardValues[estimate] = '';
-      cardValues[achievement] = '';
       const labels = cardValues.labels.map(label => label.name).join();
       const members = cardValues.members.map(member => member.fullName).join();
       const estimateMaster = customFieldsList.filter(customField => customField.name == "見積")[0];
@@ -78,22 +83,11 @@ function aaa() {
       }
       cardValues.labelList = labels;
       cardValues.memberList = members;
-      return filterArray(['id', 'closed', 'name', 'desc', 'labelList', 'memberList', 'estimate', 'achievement', 'activity', 'url'],cardValues);
+      return filterArray(['id', 'closed', 'name', 'desc', 'labelList', 'memberList', 'estimate', 'achievement', 'activity', 'checkListList', 'url'],cardValues);
     });
     return cardInfo;
   });
-  // Set the board name
-  //const cardMergeBoard = getBoardName(cardMergeEstimateAndAchievement);
-//  const list = data.reduce((pre,current) => {pre.push(...current);return pre},[]);
   outputSheet(cards);
-}
-function getBoardName(cards) {
-  const boardInfo = new GetTrelloInformation('').information;
-  const cardMergeBoard = cards.map(card => {
-    card['boardName'] = boardInfo.name;
-    return card;
-  });
-  return cardMergeBoard
 }
 function filterArray(varNameList, target) {
   const temp = {};
