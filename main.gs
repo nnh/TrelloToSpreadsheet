@@ -1,3 +1,6 @@
+/**
+* Get Trello information.
+*/
 class GetTrelloInformation {
   constructor(target) {
     this.target = target;
@@ -48,6 +51,11 @@ class GetTrelloItemsByCards extends GetTrelloInformation{
     return url;
   }  
 }
+/**
+* Output Trello information to a spreadsheet.
+* @param none
+* @return none
+*/
 function outputTrelloToSpreadSheet() {
   const estimate = 'estimate';
   const achievement = 'achievement';
@@ -56,21 +64,11 @@ function outputTrelloToSpreadSheet() {
   const customFieldsList = new GetTrelloInformation('/customFields').information;
   const cards = rawCards.map(card => {
     const cardInfo = card.map(cardValues => {
+      cardValues.labelList = cardValues.labels.map(label => label.name).join();
+      cardValues.memberList = cardValues.members.map(member => member.fullName).join();
+      // customFields
       cardValues[estimate] = '';
       cardValues[achievement] = '';
-      const checklistTarget = {id: cardValues.id, item:'/checklists'};
-      const checkLists = new GetTrelloItemsByCards(checklistTarget).information;
-      const targetCheckLists = checkLists.map(checkList => {
-        const checkItemValues = checkList.checkItems.map(checkItem => checkItem.name + '(' + checkItem.state + ')').join();
-        return checkList.name + ':' + checkItemValues;
-      });
-      cardValues.checkListList = targetCheckLists;
-      const actionsTarget = {id: cardValues.id, item:'/actions'};
-      const actionsLists = new GetTrelloItemsByCards(actionsTarget).information;
-      const targetActionsLists = actionsLists.filter(actionsList => actionsList.type == 'commentCard' && actionsList.data.text != null);
-      cardValues.activity = targetActionsLists.map(targetAction => targetAction.data.text).join();
-      const labels = cardValues.labels.map(label => label.name).join();
-      const members = cardValues.members.map(member => member.fullName).join();
       const estimateMaster = customFieldsList.filter(customField => customField.name == "見積")[0];
       const achievementMaster = customFieldsList.filter(customField => customField.name == "実績")[0];
       const estimateValue = cardValues.customFieldItems.filter(customField => customField.idCustomField == estimateMaster.id);
@@ -81,19 +79,41 @@ function outputTrelloToSpreadSheet() {
       if (achievementValue.length > 0) {
         cardValues[achievement] = achievementValue[0].value.number;
       }
-      cardValues.labelList = labels;
-      cardValues.memberList = members;
+      // checklist
+      const checklistTarget = {id: cardValues.id, item:'/checklists'};
+      const checkLists = new GetTrelloItemsByCards(checklistTarget).information;
+      const targetCheckLists = checkLists.map(checkList => {
+        const checkItemValues = checkList.checkItems.map(checkItem => checkItem.name + '(' + checkItem.state + ')').join();
+        return checkList.name + ':' + checkItemValues;
+      });
+      cardValues.checkListList = targetCheckLists.join();
+      // activity
+      const actionsTarget = {id: cardValues.id, item:'/actions'};
+      const actionsLists = new GetTrelloItemsByCards(actionsTarget).information;
+      const targetActionsLists = actionsLists.filter(actionsList => actionsList.type == 'commentCard' && actionsList.data.text != null);
+      cardValues.activity = targetActionsLists.map(targetAction => targetAction.data.text).join();
       return filterArray(['id', 'closed', 'name', 'desc', 'labelList', 'memberList', 'estimate', 'achievement', 'activity', 'checkListList', 'url'],cardValues);
     });
     return cardInfo;
   });
   outputSheet(cards);
 }
+/**
+* Extract array elements.
+* @param {!Array <string>} varNameList List of keys to be extracted
+* @param {Object>} target Associative array of extraction targets
+* @return {Object} Associative array 
+*/
 function filterArray(varNameList, target) {
   const temp = {};
   varNameList.forEach(varName => temp[varName] = target[varName]);
   return temp;
 }
+/**
+* Output to spreadsheet.
+* @param {Object>} An associative array of output targets
+* @return none
+*/
 function outputSheet(target) {
   const sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
   const sheetName = "trello";
