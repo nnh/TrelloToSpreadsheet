@@ -68,7 +68,7 @@ function outputTrelloToSpreadSheet(){
     card.listClosed = listInfo.closed;
     // board
     card.board = trelloInfoList.name;
-    return filterArray(['board', 'list', 'listClosed', 'closed', 'name', 'desc', 'labelList', 'memberList', 'estimate', 'achievement', 'activity', 'checklist', 'due', 'dueComplete', 'url', 'id'], card);
+    return filterArray(['board', 'list', 'listClosed', 'closed', 'name', 'desc', 'labelList', 'memberList', 'estimate', 'achievement', 'activity', 'checklist', 'due', 'dueComplete', 'url'], card);
   });
   outputSheet(cards);
 }
@@ -94,7 +94,8 @@ function outputSheet(target){
   // Output card information to spreadsheet
   const sheet = SpreadsheetApp.openByUrl(sheetUrl).getSheetByName(sheetName);
   sheet.clearContents();
+  const header = ['ボード名', 'リスト名', 'リストアーカイブ', 'カードアーカイブ', 'カード名', '説明', 'ラベル', 'メンバー', '見積', '実績', 'アクティビティ', 'チェックリスト', '期限', '完了', 'URL'];
   const body = target.map(targetValue => Object.values(targetValue));
-  const outputValues = [[...Object.keys(target[0])], ...body];
+  const outputValues = [header, ...body];
   sheet.getRange(1, 1, outputValues.length, outputValues[0].length).setValues(outputValues);
 }
