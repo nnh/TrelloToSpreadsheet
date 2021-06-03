@@ -13,3 +13,5 @@ URLの後ろに'.json'を付加（例：https://trello.com/b/xxxxxxx/xxx.json）
 https://community.atlassian.com/t5/Trello-questions/How-to-get-Trello-Board-ID/qaq-p/1347525
 ## プロパティの設定
 取得したAPIキー、トークン、ボードIDをregister-property.gsのregisterScriptProperty functionを用いて設定する
+# 実行手順
+main.gsを開き、outputTrelloToSpreadSheetを実行する
